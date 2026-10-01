@@ -87,6 +87,7 @@ dialog h2{margin:0 0 10px;font-size:1.5rem}dialog p{color:var(--mute);margin:0 0
 .authmsg.err{color:#ff8a8a}
 .authlinks{display:flex;flex-wrap:wrap;gap:14px;margin-top:18px;color:var(--mute)}
 .authlinks a{color:var(--ink)}
+.smallnote{color:var(--mute);font-size:.9rem;margin:8px 0 0}
 .account-card{max-width:620px}
 .smallnote{color:var(--mute);font-size:.92rem;margin-top:10px}
 </style>
@@ -208,16 +209,23 @@ dialog h2{margin:0 0 10px;font-size:1.5rem}dialog p{color:var(--mute);margin:0 0
 <!-- AUTH: LOGIN -->
 <section class="page" data-page="login">
   <h1>Welcome <em>back.</em></h1>
-  <p class="lead">Sign in to your BISO account.</p>
+  <p class="lead">Enter your email and BISO will send you a one-time 6-digit sign-in code.</p>
   <div class="authbox">
     <form id="loginForm">
       <label for="loginEmail">Email</label>
       <input id="loginEmail" type="email" autocomplete="email" required>
-      <label for="loginPassword">Password</label>
-      <input id="loginPassword" type="password" autocomplete="current-password" required>
-      <button class="btn" type="submit">Log in</button>
+      <button class="btn" type="submit">Send sign-in code</button>
       <p id="loginMsg" class="authmsg" role="status"></p>
     </form>
+
+    <form id="loginOtpForm" style="display:none;margin-top:18px">
+      <label for="loginOtp">6-digit code</label>
+      <input id="loginOtp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" minlength="6" required>
+      <button class="btn green" type="submit">Verify code</button>
+      <p id="loginOtpMsg" class="authmsg" role="status"></p>
+      <p id="loginOtpTimer" class="smallnote"></p>
+    </form>
+
     <div class="authlinks">
       <a href="#/signup">Create an account</a>
       <a href="#/forgot-password">Forgot password?</a>
@@ -248,14 +256,23 @@ dialog h2{margin:0 0 10px;font-size:1.5rem}dialog p{color:var(--mute);margin:0 0
 <!-- AUTH: FORGOT PASSWORD -->
 <section class="page" data-page="forgot-password">
   <h1>Reset your <em>password.</em></h1>
-  <p class="lead">Enter your account email and we'll send a secure password-reset link.</p>
+  <p class="lead">Enter your email and we'll send a 6-digit password-reset code. The code is valid for 15 minutes.</p>
   <div class="authbox">
     <form id="forgotForm">
       <label for="forgotEmail">Email</label>
       <input id="forgotEmail" type="email" autocomplete="email" required>
-      <button class="btn" type="submit">Send reset email</button>
+      <button class="btn" type="submit">Send reset code</button>
       <p id="forgotMsg" class="authmsg" role="status"></p>
     </form>
+
+    <form id="recoveryOtpForm" style="display:none;margin-top:18px">
+      <label for="recoveryOtp">6-digit reset code</label>
+      <input id="recoveryOtp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" minlength="6" required>
+      <button class="btn green" type="submit">Verify reset code</button>
+      <p id="recoveryOtpMsg" class="authmsg" role="status"></p>
+      <p id="recoveryOtpTimer" class="smallnote"></p>
+    </form>
+
     <div class="authlinks"><a href="#/login">Back to login</a></div>
   </div>
 </section>
@@ -263,7 +280,7 @@ dialog h2{margin:0 0 10px;font-size:1.5rem}dialog p{color:var(--mute);margin:0 0
 <!-- AUTH: RESET PASSWORD -->
 <section class="page" data-page="reset-password">
   <h1>Choose a new <em>password.</em></h1>
-  <p class="lead">Enter your new password below.</p>
+  <p class="lead">Your reset code has been verified. Choose a new password.</p>
   <div class="authbox">
     <form id="resetForm">
       <label for="resetPassword">New password</label>
@@ -374,8 +391,15 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   }
 });
 
+const OTP_LIFETIME_MS = 15 * 60 * 1000;
+
 const $ = id => document.getElementById(id);
 const callbackUrl = () => window.location.origin + window.location.pathname;
+
+let loginEmailPending = '';
+let recoveryEmailPending = '';
+let loginTimer = null;
+let recoveryTimer = null;
 
 function go(page) {
   const target = '#/' + (page === 'home' ? '' : page);
@@ -395,34 +419,63 @@ function humanError(error) {
   return error && error.message ? error.message : 'Something went wrong. Please try again.';
 }
 
+function startTimer(elementId, kind) {
+  const key = kind === 'login' ? 'biso_login_otp_expires' : 'biso_recovery_otp_expires';
+  const until = Date.now() + OTP_LIFETIME_MS;
+  sessionStorage.setItem(key, String(until));
+
+  if (kind === 'login' && loginTimer) clearInterval(loginTimer);
+  if (kind === 'recovery' && recoveryTimer) clearInterval(recoveryTimer);
+
+  const tick = () => {
+    const remaining = Math.max(0, Number(sessionStorage.getItem(key) || 0) - Date.now());
+    const minutes = Math.floor(remaining / 60000);
+    const seconds = Math.floor((remaining % 60000) / 1000);
+    const el = $(elementId);
+    if (el) {
+      el.textContent = remaining > 0
+        ? `Code expires in ${minutes}:${String(seconds).padStart(2, '0')}.`
+        : 'This code has expired. Request a new code.';
+    }
+    if (remaining <= 0) {
+      if (kind === 'login' && loginTimer) clearInterval(loginTimer);
+      if (kind === 'recovery' && recoveryTimer) clearInterval(recoveryTimer);
+    }
+  };
+
+  tick();
+  const id = setInterval(tick, 1000);
+  if (kind === 'login') loginTimer = id;
+  else recoveryTimer = id;
+}
+
 async function initAuth() {
-  // PKCE callback code is consumed automatically by the Supabase client.
   const params = new URLSearchParams(window.location.search);
   const authFlag = params.get('auth');
-
   const { data: { session } } = await supabase.auth.getSession();
 
-  if (authFlag === 'recovery') {
-    go('reset-password');
-  } else if (authFlag === 'confirmed') {
+  if (authFlag === 'confirmed') {
     go(session ? 'account' : 'login');
-    if ($('loginMsg')) msg('loginMsg', 'Your email is confirmed. You can now log in.', true);
+    if ($('loginMsg')) msg('loginMsg', 'Your email is confirmed. You can now sign in with an email code.', true);
   }
 
   if (location.hash === '#/account' && !session) go('login');
-  if (location.hash === '#/login' && session) go('account');
-
   updateAccount(session);
 }
 
 async function updateAccount(session) {
   const accountEmail = $('accountEmail');
-  if (accountEmail) accountEmail.textContent = session ? ('Signed in as ' + (session.user.email || '')) : 'You are not signed in.';
+  if (accountEmail) {
+    accountEmail.textContent = session
+      ? ('Signed in as ' + (session.user.email || ''))
+      : 'You are not signed in.';
+  }
 }
 
 $('signupForm')?.addEventListener('submit', async e => {
   e.preventDefault();
   msg('signupMsg', 'Creating your account…');
+
   const name = $('signupName').value.trim();
   const email = $('signupEmail').value.trim();
   const password = $('signupPassword').value;
@@ -437,66 +490,141 @@ $('signupForm')?.addEventListener('submit', async e => {
   });
 
   if (error) return msg('signupMsg', humanError(error));
+
   if (data.session) {
     msg('signupMsg', 'Account created. You are now signed in.', true);
     setTimeout(() => go('account'), 500);
   } else {
-    msg('signupMsg', 'Account created. Check your email and click the confirmation link.', true);
+    msg('signupMsg', 'Account created. Check your email to confirm the account, then sign in using a 6-digit code.', true);
   }
 });
 
 $('loginForm')?.addEventListener('submit', async e => {
   e.preventDefault();
-  msg('loginMsg', 'Signing you in…');
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: $('loginEmail').value.trim(),
-    password: $('loginPassword').value
+
+  const email = $('loginEmail').value.trim();
+  if (!email) return;
+
+  msg('loginMsg', 'Sending your sign-in code…');
+
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      shouldCreateUser: false
+    }
   });
+
   if (error) return msg('loginMsg', humanError(error));
+
+  loginEmailPending = email;
+  $('loginOtpForm').style.display = 'block';
+  $('loginOtp').focus();
+  msg('loginMsg', 'A 6-digit sign-in code has been sent to your email.', true);
+  startTimer('loginOtpTimer', 'login');
+});
+
+$('loginOtpForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+
+  const email = loginEmailPending || $('loginEmail').value.trim();
+  const token = $('loginOtp').value.trim();
+
+  if (!/^\d{6}$/.test(token)) {
+    return msg('loginOtpMsg', 'Enter the 6-digit code from your email.');
+  }
+
+  msg('loginOtpMsg', 'Verifying code…');
+
+  const { data, error } = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: 'email'
+  });
+
+  if (error) return msg('loginOtpMsg', humanError(error));
+
+  sessionStorage.removeItem('biso_login_otp_expires');
   updateAccount(data.session);
   go('account');
 });
 
 $('forgotForm')?.addEventListener('submit', async e => {
   e.preventDefault();
-  msg('forgotMsg', 'Sending reset email…');
+
   const email = $('forgotEmail').value.trim();
+  if (!email) return;
+
+  msg('forgotMsg', 'Sending your reset code…');
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: callbackUrl() + '?auth=recovery'
   });
 
   if (error) return msg('forgotMsg', humanError(error));
-  msg('forgotMsg', 'If an account exists for that email, a reset link has been sent. Check your inbox and spam folder.', true);
+
+  recoveryEmailPending = email;
+  $('recoveryOtpForm').style.display = 'block';
+  $('recoveryOtp').focus();
+  msg('forgotMsg', 'If an account exists for that email, a 6-digit reset code has been sent.', true);
+  startTimer('recoveryOtpTimer', 'recovery');
+});
+
+$('recoveryOtpForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+
+  const email = recoveryEmailPending || $('forgotEmail').value.trim();
+  const token = $('recoveryOtp').value.trim();
+
+  if (!/^\d{6}$/.test(token)) {
+    return msg('recoveryOtpMsg', 'Enter the 6-digit reset code from your email.');
+  }
+
+  msg('recoveryOtpMsg', 'Verifying reset code…');
+
+  const { data, error } = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: 'recovery'
+  });
+
+  if (error) return msg('recoveryOtpMsg', humanError(error));
+
+  sessionStorage.removeItem('biso_recovery_otp_expires');
+  if (!data.session) return msg('recoveryOtpMsg', 'The reset code was verified, but a recovery session was not created. Please request a new code.');
+
+  msg('recoveryOtpMsg', 'Code verified. Choose your new password.', true);
+  go('reset-password');
 });
 
 $('resetForm')?.addEventListener('submit', async e => {
   e.preventDefault();
+
   const p1 = $('resetPassword').value;
   const p2 = $('resetPassword2').value;
+
   if (p1 !== p2) return msg('resetMsg', 'The passwords do not match.');
   if (p1.length < 8) return msg('resetMsg', 'Password must be at least 8 characters.');
 
   msg('resetMsg', 'Updating password…');
+
   const { error } = await supabase.auth.updateUser({ password: p1 });
   if (error) return msg('resetMsg', humanError(error));
 
-  msg('resetMsg', 'Password updated successfully. You can now log in with your new password.', true);
+  msg('resetMsg', 'Password updated successfully. You can now sign in with a new 6-digit code.', true);
   setTimeout(() => go('account'), 900);
 });
 
 $('logoutBtn')?.addEventListener('click', async () => {
   const { error } = await supabase.auth.signOut();
   if (error) return msg('accountMsg', humanError(error));
+
   msg('accountMsg', 'Logged out successfully.', true);
   setTimeout(() => go('login'), 500);
 });
 
 supabase.auth.onAuthStateChange((event, session) => {
   updateAccount(session);
-  if (event === 'PASSWORD_RECOVERY') {
-    go('reset-password');
-  }
+
   if (event === 'SIGNED_OUT' && location.hash === '#/account') {
     go('login');
   }
