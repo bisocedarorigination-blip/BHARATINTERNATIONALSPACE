@@ -90,6 +90,25 @@ dialog h2{margin:0 0 10px;font-size:1.5rem}dialog p{color:var(--mute);margin:0 0
 .smallnote{color:var(--mute);font-size:.9rem;margin:8px 0 0}
 .account-card{max-width:620px}
 .smallnote{color:var(--mute);font-size:.92rem;margin-top:10px}
+
+.admin-wrap{margin-top:34px;max-width:1080px}
+.profile-hero{background:linear-gradient(135deg,var(--bg2),rgba(255,153,51,.08));border:1px solid var(--line);border-radius:24px;padding:30px;margin-bottom:22px}
+.profile-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:20px}
+.stat{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:16px}
+.stat b{display:block;font-size:1.1rem}.stat span{color:var(--mute);font-size:.88rem}
+.role{display:inline-block;padding:5px 12px;border-radius:999px;background:var(--line);font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.role.admin{background:rgba(255,153,51,.18);border:1px solid var(--acc);color:var(--acc)}
+.dashboard{margin-top:26px;background:var(--bg2);border:1px solid var(--line);border-radius:24px;padding:28px}
+.dashboard h2{margin-bottom:18px}.tool-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+.tool{background:var(--bg);border:1px solid var(--line);border-radius:18px;padding:20px}.tool.full{grid-column:1/-1}
+.tool h3{margin-bottom:12px}.tool p{color:var(--mute);margin-top:0}
+.tool input,.tool textarea,.tool select{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:var(--bg2);color:var(--ink);font:inherit;margin:0 0 10px}
+.tool textarea{min-height:90px;resize:vertical}.tool-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.data-table{width:100%;border-collapse:collapse;font-size:.9rem}.data-table th,.data-table td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.data-table th{color:var(--mute);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}
+.data-table select{margin:0;min-width:110px;padding:7px}.status{display:inline-block;padding:3px 8px;border-radius:999px;background:var(--line);font-size:.75rem}
+.admin-msg{min-height:22px;color:var(--mute);margin:10px 0 0}.admin-msg.ok{color:var(--grn)}.admin-msg.err{color:#ff8a8a}
+.notice-list{display:grid;gap:10px;margin-top:12px}.notice{border:1px solid var(--line);border-radius:12px;padding:12px}.notice b{display:block}.notice span{color:var(--mute);font-size:.86rem}
+@media(max-width:800px){.profile-grid,.tool-grid{grid-template-columns:1fr}.tool.full{grid-column:auto}.data-table{display:block;overflow-x:auto;white-space:nowrap}}
 </style>
 </head>
 <body>
@@ -295,13 +314,44 @@ dialog h2{margin:0 0 10px;font-size:1.5rem}dialog p{color:var(--mute);margin:0 0
 
 <!-- AUTH: ACCOUNT -->
 <section class="page" data-page="account">
-  <h1>Your <em>account.</em></h1>
-  <p class="lead">Manage your BISO login session.</p>
-  <div class="authbox account-card">
-    <p id="accountEmail" class="lead" style="margin-bottom:18px"></p>
-    <button id="logoutBtn" class="btn ghost" type="button">Log out</button>
-    <p id="accountMsg" class="authmsg" role="status"></p>
+  <h1>Hello, <em id="accountName">BISO Member</em>.</h1>
+  <p class="lead">Welcome to your BISO member account.</p>
+  <div class="profile-hero">
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <div><h2 id="accountWelcome" style="margin:0 0 6px">Welcome to BISO 🚀</h2><p id="accountEmail" class="sub" style="margin:0"></p></div>
+      <span id="accountRole" class="role">BISO MEMBER</span>
+    </div>
+    <div class="profile-grid">
+      <div class="stat"><b id="memberSince">—</b><span>Member since</span></div>
+      <div class="stat"><b id="accountStatus">Active</b><span>Account status</span></div>
+      <div class="stat"><b id="accountActivities">0</b><span>My applications</span></div>
+    </div>
   </div>
+
+  <div class="grid two">
+    <div class="card"><h3>My profile</h3><p>Update the name shown on your BISO account.</p><button id="editProfileBtn" class="btn ghost" type="button">Edit profile</button></div>
+    <div class="card"><h3>Security</h3><p>Sign in with a 6-digit email code. Password recovery also uses a 15-minute code.</p><a class="btn ghost" href="#/forgot-password">Reset password</a></div>
+    <div class="card"><h3>BISO announcements</h3><p>Read the latest updates published by the BISO team.</p><div id="memberAnnouncements" class="notice-list"><span class="smallnote">Loading…</span></div></div>
+    <div class="card"><h3>My activities</h3><p>Send an application or expression of interest to BISO.</p><form id="applicationForm"><select id="applicationType" required><option value="Volunteer">Volunteer</option><option value="Student">Student</option><option value="Researcher">Researcher</option><option value="Partner">Partner</option><option value="Supporter">Supporter</option></select><textarea id="applicationMessage" placeholder="Tell BISO what you would like to do…" required></textarea><button class="btn" type="submit">Submit interest</button><p id="applicationMsg" class="admin-msg"></p></form></div>
+  </div>
+
+  <div id="editProfileBox" class="dashboard" style="display:none">
+    <h2>Edit profile</h2><form id="profileForm"><label for="profileName">Full name</label><input id="profileName" type="text" required><div class="tool-row"><button class="btn" type="submit">Save profile</button><button id="cancelProfileBtn" class="btn ghost" type="button">Cancel</button></div><p id="profileMsg" class="admin-msg"></p></form>
+  </div>
+
+  <div id="adminDashboard" class="dashboard" style="display:none">
+    <div class="row" style="justify-content:space-between;align-items:center"><div><h2>🛠️ BISO Admin Dashboard</h2><p class="sub">Creator tools for users, roles, announcements, missions and applications.</p></div><span class="role admin">ADMIN / CREATOR</span></div>
+    <div class="tool-grid">
+      <div class="tool full"><h3>👥 Manage users</h3><p>View BISO accounts and change member/admin roles or access status.</p><div style="overflow:auto"><table class="data-table"><thead><tr><th>Email</th><th>Name</th><th>Role</th><th>Access</th><th>Joined</th></tr></thead><tbody id="usersTable"><tr><td colspan="5">Loading users…</td></tr></tbody></table></div><p id="usersMsg" class="admin-msg"></p></div>
+      <div class="tool"><h3>📢 Create announcement</h3><form id="announcementForm"><input id="announcementTitle" placeholder="Announcement title" required><textarea id="announcementBody" placeholder="Announcement text" required></textarea><div class="tool-row"><label><input id="announcementPublished" type="checkbox" checked> Publish now</label><button class="btn" type="submit">Publish</button></div><p id="announcementMsg" class="admin-msg"></p></form></div>
+      <div class="tool"><h3>🚀 Create mission</h3><form id="missionForm"><input id="missionTitle" placeholder="Mission title" required><textarea id="missionDescription" placeholder="Mission description" required></textarea><select id="missionStatus"><option>Planned</option><option>In progress</option><option>Completed</option></select><button class="btn" type="submit">Add mission</button><p id="missionMsg" class="admin-msg"></p></form></div>
+      <div class="tool full"><h3>📋 Applications / interests</h3><div style="overflow:auto"><table class="data-table"><thead><tr><th>User</th><th>Type</th><th>Message</th><th>Status</th><th>Created</th></tr></thead><tbody id="applicationsTable"><tr><td colspan="5">Loading applications…</td></tr></tbody></table></div><p id="applicationsMsg" class="admin-msg"></p></div>
+      <div class="tool full"><h3>📚 Current missions</h3><div id="adminMissions" class="notice-list"><span class="smallnote">Loading…</span></div></div>
+      <div class="tool full"><h3>📣 Published announcements</h3><div id="adminAnnouncements" class="notice-list"><span class="smallnote">Loading…</span></div></div>
+    </div>
+  </div>
+
+  <div class="authbox account-card" style="margin-top:24px"><button id="logoutBtn" class="btn ghost" type="button">Log out</button><p id="accountMsg" class="authmsg" role="status"></p></div>
 </section>
 </main>
 </div>
@@ -392,7 +442,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
 });
 
 const OTP_LIFETIME_MS = 15 * 60 * 1000;
-
+const CREATOR_EMAIL = 'bisocedarorigination@gmail.com';
 const $ = id => document.getElementById(id);
 const callbackUrl = () => window.location.origin + window.location.pathname;
 
@@ -400,240 +450,101 @@ let loginEmailPending = '';
 let recoveryEmailPending = '';
 let loginTimer = null;
 let recoveryTimer = null;
+let currentProfile = null;
 
 function go(page) {
   const target = '#/' + (page === 'home' ? '' : page);
   history.replaceState(null, '', target);
   window.dispatchEvent(new HashChangeEvent('hashchange'));
 }
-
 function msg(id, text, ok=false) {
-  const el = $(id);
-  if (!el) return;
-  el.textContent = text || '';
-  el.classList.toggle('ok', !!ok);
-  el.classList.toggle('err', !!text && !ok);
+  const el = $(id); if (!el) return;
+  el.textContent = text || ''; el.classList.toggle('ok', !!text && ok); el.classList.toggle('err', !!text && !ok);
 }
-
-function humanError(error) {
-  return error && error.message ? error.message : 'Something went wrong. Please try again.';
-}
-
+function humanError(error) { return error && error.message ? error.message : 'Something went wrong. Please try again.'; }
+function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+function fmtDate(v){try{return new Date(v).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});}catch(e){return '—';}}
 function startTimer(elementId, kind) {
   const key = kind === 'login' ? 'biso_login_otp_expires' : 'biso_recovery_otp_expires';
-  const until = Date.now() + OTP_LIFETIME_MS;
-  sessionStorage.setItem(key, String(until));
-
+  const until = Date.now() + OTP_LIFETIME_MS; sessionStorage.setItem(key, String(until));
   if (kind === 'login' && loginTimer) clearInterval(loginTimer);
   if (kind === 'recovery' && recoveryTimer) clearInterval(recoveryTimer);
-
-  const tick = () => {
-    const remaining = Math.max(0, Number(sessionStorage.getItem(key) || 0) - Date.now());
-    const minutes = Math.floor(remaining / 60000);
-    const seconds = Math.floor((remaining % 60000) / 1000);
-    const el = $(elementId);
-    if (el) {
-      el.textContent = remaining > 0
-        ? `Code expires in ${minutes}:${String(seconds).padStart(2, '0')}.`
-        : 'This code has expired. Request a new code.';
-    }
-    if (remaining <= 0) {
-      if (kind === 'login' && loginTimer) clearInterval(loginTimer);
-      if (kind === 'recovery' && recoveryTimer) clearInterval(recoveryTimer);
-    }
-  };
-
-  tick();
-  const id = setInterval(tick, 1000);
-  if (kind === 'login') loginTimer = id;
-  else recoveryTimer = id;
+  const tick=()=>{const remaining=Math.max(0,Number(sessionStorage.getItem(key)||0)-Date.now());const m=Math.floor(remaining/60000),s=Math.floor((remaining%60000)/1000);const el=$(elementId);if(el)el.textContent=remaining>0?`Code expires in ${m}:${String(s).padStart(2,'0')}.`:'This code has expired. Request a new code.';if(remaining<=0){if(kind==='login'&&loginTimer)clearInterval(loginTimer);if(kind==='recovery'&&recoveryTimer)clearInterval(recoveryTimer);}};
+  tick(); const id=setInterval(tick,1000); if(kind==='login')loginTimer=id;else recoveryTimer=id;
 }
 
-async function initAuth() {
-  const params = new URLSearchParams(window.location.search);
-  const authFlag = params.get('auth');
-  const { data: { session } } = await supabase.auth.getSession();
-
-  if (authFlag === 'confirmed') {
-    go(session ? 'account' : 'login');
-    if ($('loginMsg')) msg('loginMsg', 'Your email is confirmed. You can now sign in with an email code.', true);
+async function getProfile(user){
+  if(!user) return null;
+  const {data,error}=await supabase.from('profiles').select('*').eq('id',user.id).maybeSingle();
+  if(error){console.warn('Profile load:',error.message);return null;}
+  return data;
+}
+async function ensureProfile(user){
+  let p=await getProfile(user);
+  if(!p){
+    const {data,error}=await supabase.from('profiles').insert({id:user.id,email:user.email||'',full_name:user.user_metadata?.full_name||'',role:'member',is_active:true}).select().single();
+    if(!error)p=data;
   }
-
-  if (location.hash === '#/account' && !session) go('login');
-  updateAccount(session);
+  return p;
 }
 
-async function updateAccount(session) {
-  const accountEmail = $('accountEmail');
-  if (accountEmail) {
-    accountEmail.textContent = session
-      ? ('Signed in as ' + (session.user.email || ''))
-      : 'You are not signed in.';
-  }
+async function updateAccount(session){
+  if(!session){currentProfile=null;return;}
+  const p=await ensureProfile(session.user); currentProfile=p;
+  if(p && p.is_active===false){await supabase.auth.signOut();msg('loginMsg','Your BISO account access is currently disabled by an administrator.');go('login');return;}
+  const name=(p?.full_name||session.user.user_metadata?.full_name||session.user.email?.split('@')[0]||'BISO Member').trim();
+  if($('accountName'))$('accountName').textContent=name;
+  if($('accountWelcome'))$('accountWelcome').textContent=`Welcome to BISO, ${name} 🚀`;
+  if($('accountEmail'))$('accountEmail').textContent=session.user.email||'';
+  if($('accountRole')){$('accountRole').textContent=(p?.role||'member').toUpperCase();$('accountRole').classList.toggle('admin',p?.role==='admin');}
+  if($('memberSince'))$('memberSince').textContent=fmtDate(p?.created_at||session.user.created_at);
+  if($('accountStatus'))$('accountStatus').textContent=p?.is_active===false?'Disabled':'Active';
+  $('adminDashboard').style.display=p?.role==='admin'?'block':'none';
+  await loadMemberContent(session.user.id);
+  if(p?.role==='admin') await loadAdminContent();
 }
 
-$('signupForm')?.addEventListener('submit', async e => {
-  e.preventDefault();
-  msg('signupMsg', 'Creating your account…');
+async function loadMemberContent(userId){
+  const [{data:apps}, {data:ann}] = await Promise.all([
+    supabase.from('applications').select('id').eq('user_id',userId),
+    supabase.from('announcements').select('id,title,body,created_at').eq('published',true).order('created_at',{ascending:false}).limit(8)
+  ]);
+  if($('accountActivities'))$('accountActivities').textContent=String(apps?.length||0);
+  if($('memberAnnouncements'))$('memberAnnouncements').innerHTML=ann?.length?ann.map(a=>`<div class="notice"><b>${escapeHtml(a.title)}</b><span>${escapeHtml(a.body)} · ${fmtDate(a.created_at)}</span></div>`).join(''):'<span class="smallnote">No announcements yet.</span>';
+}
 
-  const name = $('signupName').value.trim();
-  const email = $('signupEmail').value.trim();
-  const password = $('signupPassword').value;
+async function loadAdminContent(){
+  const [{data:users,error:ue},{data:apps,error:ae},{data:missions,error:me},{data:ann,error:ne}]=await Promise.all([
+    supabase.from('profiles').select('id,email,full_name,role,is_active,created_at').order('created_at',{ascending:false}),
+    supabase.from('applications').select('id,user_id,type,message,status,created_at,profiles(email,full_name)').order('created_at',{ascending:false}),
+    supabase.from('missions').select('*').order('created_at',{ascending:false}),
+    supabase.from('announcements').select('*').order('created_at',{ascending:false})
+  ]);
+  if(ue){msg('usersMsg',humanError(ue));} else if($('usersTable')){$('usersTable').innerHTML=(users||[]).map(u=>`<tr><td>${escapeHtml(u.email)}</td><td>${escapeHtml(u.full_name||'—')}</td><td><select data-user-role="${u.id}"><option value="member" ${u.role==='member'?'selected':''}>Member</option><option value="admin" ${u.role==='admin'?'selected':''}>Admin</option></select></td><td><button class="btn ${u.is_active?'ghost':'green'}" style="padding:6px 12px;font-size:.8rem" data-user-active="${u.id}" data-active="${u.is_active}">${u.is_active?'Active':'Disabled'}</button></td><td>${fmtDate(u.created_at)}</td></tr>`).join('')||'<tr><td colspan="5">No users found.</td></tr>'}
+  if(ae)msg('applicationsMsg',humanError(ae)); else if($('applicationsTable'))$('applicationsTable').innerHTML=(apps||[]).map(a=>`<tr><td>${escapeHtml(a.profiles?.email||'')}</td><td>${escapeHtml(a.type)}</td><td style="white-space:normal;min-width:260px">${escapeHtml(a.message)}</td><td><select data-app-status="${a.id}"><option ${a.status==='new'?'selected':''}>new</option><option ${a.status==='reviewing'?'selected':''}>reviewing</option><option ${a.status==='accepted'?'selected':''}>accepted</option><option ${a.status==='declined'?'selected':''}>declined</option></select></td><td>${fmtDate(a.created_at)}</td></tr>`).join('')||'<tr><td colspan="5">No applications yet.</td></tr>'}
+  if(me)msg('missionMsg',humanError(me)); if($('adminMissions'))$('adminMissions').innerHTML=(missions||[]).map(m=>`<div class="notice"><b>${escapeHtml(m.title)} <span class="status">${escapeHtml(m.status)}</span></b><span>${escapeHtml(m.description)}</span></div>`).join('')||'<span class="smallnote">No missions added yet.</span>';
+  if(ne)msg('announcementMsg',humanError(ne)); if($('adminAnnouncements'))$('adminAnnouncements').innerHTML=(ann||[]).map(a=>`<div class="notice"><b>${escapeHtml(a.title)}</b><span>${escapeHtml(a.body)} · ${a.published?'Published':'Draft'} · ${fmtDate(a.created_at)}</span></div>`).join('')||'<span class="smallnote">No announcements yet.</span>';
+}
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { full_name: name },
-      emailRedirectTo: callbackUrl() + '?auth=confirmed'
-    }
-  });
+$('signupForm')?.addEventListener('submit',async e=>{e.preventDefault();msg('signupMsg','Creating your account…');const name=$('signupName').value.trim(),email=$('signupEmail').value.trim(),password=$('signupPassword').value;const {data,error}=await supabase.auth.signUp({email,password,options:{data:{full_name:name},emailRedirectTo:callbackUrl()+'?auth=confirmed'}});if(error)return msg('signupMsg',humanError(error));if(data.session){msg('signupMsg','Account created. You are now signed in.',true);setTimeout(()=>go('account'),500);}else msg('signupMsg','Account created. Check your email to confirm the account, then sign in using a 6-digit code.',true);});
+$('loginForm')?.addEventListener('submit',async e=>{e.preventDefault();const email=$('loginEmail').value.trim();if(!email)return;msg('loginMsg','Sending your sign-in code…');const {error}=await supabase.auth.signInWithOtp({email,options:{shouldCreateUser:false}});if(error)return msg('loginMsg',humanError(error));loginEmailPending=email;$('loginOtpForm').style.display='block';$('loginOtp').focus();msg('loginMsg','A 6-digit sign-in code has been sent to your email.',true);startTimer('loginOtpTimer','login');});
+$('loginOtpForm')?.addEventListener('submit',async e=>{e.preventDefault();const email=loginEmailPending||$('loginEmail').value.trim(),token=$('loginOtp').value.trim();if(!/^\d{6}$/.test(token))return msg('loginOtpMsg','Enter the 6-digit code from your email.');msg('loginOtpMsg','Verifying code…');const {data,error}=await supabase.auth.verifyOtp({email,token,type:'email'});if(error)return msg('loginOtpMsg',humanError(error));sessionStorage.removeItem('biso_login_otp_expires');await updateAccount(data.session);if(data.session)go('account');});
+$('forgotForm')?.addEventListener('submit',async e=>{e.preventDefault();const email=$('forgotEmail').value.trim();if(!email)return;msg('forgotMsg','Sending your reset code…');const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:callbackUrl()+'?auth=recovery'});if(error)return msg('forgotMsg',humanError(error));recoveryEmailPending=email;$('recoveryOtpForm').style.display='block';$('recoveryOtp').focus();msg('forgotMsg','If an account exists for that email, a 6-digit reset code has been sent.',true);startTimer('recoveryOtpTimer','recovery');});
+$('recoveryOtpForm')?.addEventListener('submit',async e=>{e.preventDefault();const email=recoveryEmailPending||$('forgotEmail').value.trim(),token=$('recoveryOtp').value.trim();if(!/^\d{6}$/.test(token))return msg('recoveryOtpMsg','Enter the 6-digit reset code from your email.');msg('recoveryOtpMsg','Verifying reset code…');const {data,error}=await supabase.auth.verifyOtp({email,token,type:'recovery'});if(error)return msg('recoveryOtpMsg',humanError(error));sessionStorage.removeItem('biso_recovery_otp_expires');if(!data.session)return msg('recoveryOtpMsg','The reset code was verified, but a recovery session was not created. Please request a new code.');msg('recoveryOtpMsg','Code verified. Choose your new password.',true);go('reset-password');});
+$('resetForm')?.addEventListener('submit',async e=>{e.preventDefault();const p1=$('resetPassword').value,p2=$('resetPassword2').value;if(p1!==p2)return msg('resetMsg','The passwords do not match.');if(p1.length<8)return msg('resetMsg','Password must be at least 8 characters.');msg('resetMsg','Updating password…');const {error}=await supabase.auth.updateUser({password:p1});if(error)return msg('resetMsg',humanError(error));msg('resetMsg','Password updated successfully. You can now sign in with a new 6-digit code.',true);setTimeout(()=>go('account'),900);});
+$('editProfileBtn')?.addEventListener('click',()=>{$('editProfileBox').style.display='block';$('profileName').value=currentProfile?.full_name||'';$('profileName').focus();});
+$('cancelProfileBtn')?.addEventListener('click',()=>{$('editProfileBox').style.display='none';});
+$('profileForm')?.addEventListener('submit',async e=>{e.preventDefault();const name=$('profileName').value.trim();if(!name)return;msg('profileMsg','Saving…');const {data,error}=await supabase.from('profiles').update({full_name:name}).eq('id',currentProfile.id).select().single();if(error)return msg('profileMsg',humanError(error));currentProfile=data;$('editProfileBox').style.display='none';msg('accountMsg','Profile updated.',true);const {data:{session}}=await supabase.auth.getSession();await updateAccount(session);});
+$('applicationForm')?.addEventListener('submit',async e=>{e.preventDefault();if(!currentProfile)return;msg('applicationMsg','Submitting…');const {error}=await supabase.from('applications').insert({user_id:currentProfile.id,type:$('applicationType').value,message:$('applicationMessage').value.trim()});if(error)return msg('applicationMsg',humanError(error));$('applicationMessage').value='';msg('applicationMsg','Your interest was submitted to BISO.',true);const {data:{session}}=await supabase.auth.getSession();await loadMemberContent(session.user.id);});
+$('announcementForm')?.addEventListener('submit',async e=>{e.preventDefault();msg('announcementMsg','Publishing…');const {error}=await supabase.from('announcements').insert({title:$('announcementTitle').value.trim(),body:$('announcementBody').value.trim(),published:$('announcementPublished').checked,created_by:currentProfile.id});if(error)return msg('announcementMsg',humanError(error));$('announcementTitle').value='';$('announcementBody').value='';msg('announcementMsg','Announcement saved.',true);await loadAdminContent();});
+$('missionForm')?.addEventListener('submit',async e=>{e.preventDefault();msg('missionMsg','Adding…');const {error}=await supabase.from('missions').insert({title:$('missionTitle').value.trim(),description:$('missionDescription').value.trim(),status:$('missionStatus').value,created_by:currentProfile.id});if(error)return msg('missionMsg',humanError(error));$('missionTitle').value='';$('missionDescription').value='';msg('missionMsg','Mission added.',true);await loadAdminContent();});
+document.addEventListener('change',async e=>{const role=e.target.closest?.('[data-user-role]');if(role){const {error}=await supabase.from('profiles').update({role:role.value}).eq('id',role.dataset.userRole);if(error){msg('usersMsg',humanError(error));await loadAdminContent();}else msg('usersMsg','User role updated.',true);return;}const st=e.target.closest?.('[data-app-status]');if(st){const {error}=await supabase.from('applications').update({status:st.value}).eq('id',st.dataset.appStatus);if(error)msg('applicationsMsg',humanError(error));else msg('applicationsMsg','Application status updated.',true);}});
+document.addEventListener('click',async e=>{const b=e.target.closest?.('[data-user-active]');if(!b)return;const next=b.dataset.active!=='true';const {error}=await supabase.from('profiles').update({is_active:next}).eq('id',b.dataset.userActive);if(error)msg('usersMsg',humanError(error));else{msg('usersMsg',`User access ${next?'enabled':'disabled'}.`,true);await loadAdminContent();}});
+$('logoutBtn')?.addEventListener('click',async()=>{const {error}=await supabase.auth.signOut();if(error)return msg('accountMsg',humanError(error));msg('accountMsg','Logged out successfully.',true);setTimeout(()=>go('login'),500);});
 
-  if (error) return msg('signupMsg', humanError(error));
-
-  if (data.session) {
-    msg('signupMsg', 'Account created. You are now signed in.', true);
-    setTimeout(() => go('account'), 500);
-  } else {
-    msg('signupMsg', 'Account created. Check your email to confirm the account, then sign in using a 6-digit code.', true);
-  }
-});
-
-$('loginForm')?.addEventListener('submit', async e => {
-  e.preventDefault();
-
-  const email = $('loginEmail').value.trim();
-  if (!email) return;
-
-  msg('loginMsg', 'Sending your sign-in code…');
-
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      shouldCreateUser: false
-    }
-  });
-
-  if (error) return msg('loginMsg', humanError(error));
-
-  loginEmailPending = email;
-  $('loginOtpForm').style.display = 'block';
-  $('loginOtp').focus();
-  msg('loginMsg', 'A 6-digit sign-in code has been sent to your email.', true);
-  startTimer('loginOtpTimer', 'login');
-});
-
-$('loginOtpForm')?.addEventListener('submit', async e => {
-  e.preventDefault();
-
-  const email = loginEmailPending || $('loginEmail').value.trim();
-  const token = $('loginOtp').value.trim();
-
-  if (!/^\d{6}$/.test(token)) {
-    return msg('loginOtpMsg', 'Enter the 6-digit code from your email.');
-  }
-
-  msg('loginOtpMsg', 'Verifying code…');
-
-  const { data, error } = await supabase.auth.verifyOtp({
-    email,
-    token,
-    type: 'email'
-  });
-
-  if (error) return msg('loginOtpMsg', humanError(error));
-
-  sessionStorage.removeItem('biso_login_otp_expires');
-  updateAccount(data.session);
-  go('account');
-});
-
-$('forgotForm')?.addEventListener('submit', async e => {
-  e.preventDefault();
-
-  const email = $('forgotEmail').value.trim();
-  if (!email) return;
-
-  msg('forgotMsg', 'Sending your reset code…');
-
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: callbackUrl() + '?auth=recovery'
-  });
-
-  if (error) return msg('forgotMsg', humanError(error));
-
-  recoveryEmailPending = email;
-  $('recoveryOtpForm').style.display = 'block';
-  $('recoveryOtp').focus();
-  msg('forgotMsg', 'If an account exists for that email, a 6-digit reset code has been sent.', true);
-  startTimer('recoveryOtpTimer', 'recovery');
-});
-
-$('recoveryOtpForm')?.addEventListener('submit', async e => {
-  e.preventDefault();
-
-  const email = recoveryEmailPending || $('forgotEmail').value.trim();
-  const token = $('recoveryOtp').value.trim();
-
-  if (!/^\d{6}$/.test(token)) {
-    return msg('recoveryOtpMsg', 'Enter the 6-digit reset code from your email.');
-  }
-
-  msg('recoveryOtpMsg', 'Verifying reset code…');
-
-  const { data, error } = await supabase.auth.verifyOtp({
-    email,
-    token,
-    type: 'recovery'
-  });
-
-  if (error) return msg('recoveryOtpMsg', humanError(error));
-
-  sessionStorage.removeItem('biso_recovery_otp_expires');
-  if (!data.session) return msg('recoveryOtpMsg', 'The reset code was verified, but a recovery session was not created. Please request a new code.');
-
-  msg('recoveryOtpMsg', 'Code verified. Choose your new password.', true);
-  go('reset-password');
-});
-
-$('resetForm')?.addEventListener('submit', async e => {
-  e.preventDefault();
-
-  const p1 = $('resetPassword').value;
-  const p2 = $('resetPassword2').value;
-
-  if (p1 !== p2) return msg('resetMsg', 'The passwords do not match.');
-  if (p1.length < 8) return msg('resetMsg', 'Password must be at least 8 characters.');
-
-  msg('resetMsg', 'Updating password…');
-
-  const { error } = await supabase.auth.updateUser({ password: p1 });
-  if (error) return msg('resetMsg', humanError(error));
-
-  msg('resetMsg', 'Password updated successfully. You can now sign in with a new 6-digit code.', true);
-  setTimeout(() => go('account'), 900);
-});
-
-$('logoutBtn')?.addEventListener('click', async () => {
-  const { error } = await supabase.auth.signOut();
-  if (error) return msg('accountMsg', humanError(error));
-
-  msg('accountMsg', 'Logged out successfully.', true);
-  setTimeout(() => go('login'), 500);
-});
-
-supabase.auth.onAuthStateChange((event, session) => {
-  updateAccount(session);
-
-  if (event === 'SIGNED_OUT' && location.hash === '#/account') {
-    go('login');
-  }
-});
-
-initAuth().catch(err => {
-  console.error('BISO Auth initialization error:', err);
-  msg('loginMsg', 'Authentication could not initialize. Check the Supabase configuration.');
-});
+supabase.auth.onAuthStateChange(async(event,session)=>{if(session)await updateAccount(session);else currentProfile=null;if(event==='SIGNED_OUT'&&location.hash==='#/account')go('login');});
+async function initAuth(){const params=new URLSearchParams(window.location.search),authFlag=params.get('auth');const {data:{session}}=await supabase.auth.getSession();if(authFlag==='confirmed'){go(session?'account':'login');if($('loginMsg'))msg('loginMsg','Your email is confirmed. You can now sign in with an email code.',true);}if(location.hash==='#/account'&&!session)go('login');if(session)await updateAccount(session);}
+initAuth().catch(err=>{console.error('BISO Auth initialization error:',err);msg('loginMsg','Authentication could not initialize. Check the Supabase configuration.');});
 </script>
 
 </body>
