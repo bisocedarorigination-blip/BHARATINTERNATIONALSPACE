@@ -426,19 +426,14 @@ dialog h2{margin:0 0 10px;font-size:1.5rem}dialog p{color:var(--mute);margin:0 0
 })();
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
 const SUPABASE_URL = 'https://zwkrmussfdfcalnlznjv.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_drb46xCYiprDxKVjxhLfqg_oIk_G16E';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: {
-    flowType: 'pkce',
-    detectSessionInUrl: true,
-    persistSession: true,
-    autoRefreshToken: true
-  }
+const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
 });
 
 const OTP_LIFETIME_MS = 15 * 60 * 1000;
