@@ -518,7 +518,124 @@ async function loadMemberContent(userId){
   if($('memberAnnouncements'))$('memberAnnouncements').innerHTML=ann?.length?ann.map(a=>`<div class="notice"><b>${escapeHtml(a.title)}</b><span>${escapeHtml(a.body)} · ${fmtDate(a.created_at)}</span></div>`).join(''):'<span class="smallnote">No announcements yet.</span>';
 }
 
-async function loadAdminContent(){
+async function loadAdminContent() {
+  const results = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('id,email,full_name,role,is_active,created_at')
+      .order('created_at', { ascending: false }),
+
+    supabase
+      .from('applications')
+      .select('id,user_id,type,message,status,created_at,profiles(email,full_name)')
+      .order('created_at', { ascending: false }),
+
+    supabase
+      .from('missions')
+      .select('*')
+      .order('created_at', { ascending: false }),
+
+    supabase
+      .from('announcements')
+      .select('*')
+      .order('created_at', { ascending: false })
+  ]);
+
+  const usersResult = results[0];
+  const appsResult = results[1];
+  const missionsResult = results[2];
+  const announcementsResult = results[3];
+
+  const users = usersResult.data || [];
+  const apps = appsResult.data || [];
+  const missions = missionsResult.data || [];
+  const ann = announcementsResult.data || [];
+
+  if (usersResult.error) {
+    msg('usersMsg', humanError(usersResult.error));
+  } else if ($('usersTable')) {
+    $('usersTable').innerHTML = users.map(function(u) {
+      return `
+        <tr>
+          <td>${escapeHtml(u.email || '')}</td>
+          <td>${escapeHtml(u.full_name || '—')}</td>
+          <td>
+            <select data-user-role="${u.id}">
+              <option value="member" ${u.role === 'member' ? 'selected' : ''}>Member</option>
+              <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
+            </select>
+          </td>
+          <td>
+            <button
+              class="btn ${u.is_active ? 'ghost' : 'green'}"
+              data-user-active="${u.id}"
+              data-active="${u.is_active}">
+              ${u.is_active ? 'Active' : 'Disabled'}
+            </button>
+          </td>
+          <td>${fmtDate(u.created_at)}</td>
+        </tr>
+      `;
+    }).join('') || '<tr><td colspan="5">No users found.</td></tr>';
+  }
+
+  if (appsResult.error) {
+    msg('applicationsMsg', humanError(appsResult.error));
+  } else if ($('applicationsTable')) {
+    $('applicationsTable').innerHTML = apps.map(function(a) {
+      return `
+        <tr>
+          <td>${escapeHtml(a.profiles?.email || '')}</td>
+          <td>${escapeHtml(a.type || '')}</td>
+          <td>${escapeHtml(a.message || '')}</td>
+          <td>
+            <select data-app-status="${a.id}">
+              <option ${a.status === 'new' ? 'selected' : ''}>new</option>
+              <option ${a.status === 'reviewing' ? 'selected' : ''}>reviewing</option>
+              <option ${a.status === 'accepted' ? 'selected' : ''}>accepted</option>
+              <option ${a.status === 'declined' ? 'selected' : ''}>declined</option>
+            </select>
+          </td>
+          <td>${fmtDate(a.created_at)}</td>
+        </tr>
+      `;
+    }).join('') || '<tr><td colspan="5">No applications yet.</td></tr>';
+  }
+
+  if (missionsResult.error) {
+    msg('missionMsg', humanError(missionsResult.error));
+  }
+
+  if ($('adminMissions')) {
+    $('adminMissions').innerHTML = missions.map(function(m) {
+      return `
+        <div class="notice">
+          <b>${escapeHtml(m.title || '')}</b>
+          <span>${escapeHtml(m.description || '')}</span>
+        </div>
+      `;
+    }).join('') || '<span class="smallnote">No missions added yet.</span>';
+  }
+
+  if (announcementsResult.error) {
+    msg('announcementMsg', humanError(announcementsResult.error));
+  }
+
+  if ($('adminAnnouncements')) {
+    $('adminAnnouncements').innerHTML = ann.map(function(a) {
+      return `
+        <div class="notice">
+          <b>${escapeHtml(a.title || '')}</b>
+          <span>
+            ${escapeHtml(a.body || '')}
+            · ${a.published ? 'Published' : 'Draft'}
+            · ${fmtDate(a.created_at)}
+          </span>
+        </div>
+      `;
+    }).join('') || '<span class="smallnote">No announcements yet.</span>';
+  }
+}
   const [{data:users,error:ue},{data:apps,error:ae},{data:missions,error:me},{data:ann,error:ne}]=await Promise.all([
     supabase.from('profiles').select('id,email,full_name,role,is_active,created_at').order('created_at',{ascending:false}),
     supabase.from('applications').select('id,user_id,type,message,status,created_at,profiles(email,full_name)').order('created_at',{ascending:false}),
