@@ -255,7 +255,7 @@ dialog{background:linear-gradient(145deg,#101a35,#080f22);color:var(--ink);borde
 
 <!-- AUTH: ACCOUNT -->
 <section class="page" data-page="account">
-  <h1>Hello, <em id="accountName">BISO Member</em>.</h1>
+  <h1>Hello, <em id="accountName">Member</em>.</h1>
   <p class="lead">Welcome to your BISO member account.</p>
   <div class="profile-hero">
     <div class="row" style="justify-content:space-between;align-items:center">
@@ -374,12 +374,7 @@ const SUPABASE_URL = 'https://zwkrmussfdfcalnlznjv.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_drb46xCYiprDxKVjxhLfqg_oIk_G16E';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: {
-    flowType: 'pkce',
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true
-  }
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
 });
 
 const OTP_LIFETIME_MS = 15 * 60 * 1000;
@@ -405,12 +400,8 @@ window.addEventListener('error', e => {
 
 function go(page) {
   const target = '#/' + (page === 'home' ? '' : page);
-  if (location.hash !== target) {
-    location.hash = target;
-  } else {
-    window.dispatchEvent(new Event('hashchange'));
-  }
-  window.scrollTo({top:0, behavior:'smooth'});
+  history.replaceState(null, '', target);
+  window.dispatchEvent(new Event('hashchange'));
 }
 function msg(id, text, ok=false) {
   const el = $(id); if (!el) return;
@@ -447,7 +438,7 @@ async function updateAccount(session){
   if(!session){currentProfile=null;return;}
   const p=await ensureProfile(session.user); currentProfile=p;
   if(p && p.is_active===false){await supabase.auth.signOut();msg('loginMsg','Your BISO account access is currently disabled by an administrator.');go('login');return;}
-  const name=(p?.full_name||session.user.user_metadata?.full_name||session.user.email?.split('@')[0]||'BISO Member').trim();
+  const name=(p?.full_name||session.user.user_metadata?.full_name||session.user.email?.split('@')[0]||'Member').trim();
   if($('accountName'))$('accountName').textContent=name;
   if($('accountWelcome'))$('accountWelcome').textContent=`Welcome to BISO, ${name} 🚀`;
   if($('accountEmail'))$('accountEmail').textContent=session.user.email||'';
